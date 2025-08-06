@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        input[type="file"], input[type="text"], textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .result {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .audio-player {
+            margin-top: 10px;
+        }
+        .recording {
+            background-color: #dc3545 !important;
+        }
+        .recording:hover {
+            background-color: #c82333 !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Voice Assistant API Test</h1>
+    
+    <div class="container">
+        <h2>API Status</h2>
+        <button onclick="checkHealth()">Check Health</button>
+        <div id="healthResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h3>1. Transcribe Audio</h3>
+            <input type="file" id="audioFile" accept=".wav,.mp3,.m4a,.flac,.ogg">
+            <button onclick="transcribeAudio()">Transcribe</button>
+            <div id="transcribeResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>2. Text Chat</h3>
+            <textarea id="chatMessage" placeholder="Enter your message here..."></textarea>
+            <button onclick="sendChat()">Send Message</button>
+            <div id="chatResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h3>3. Text to Speech</h3>
+            <textarea id="ttsText" placeholder="Enter text to convert to speech..."></textarea>
+            <button onclick="convertToSpeech()">Convert to Speech</button>
+            <div id="ttsResult" class="result"></div>
+            <div id="ttsAudio" class="audio-player"></div>
+        </div>
+
+        <div class="section">
+            <h3>4. Complete Voice Chat</h3>
+            <input type="file" id="voiceChatFile" accept=".wav,.mp3,.m4a,.flac,.ogg">
+            <button onclick="voiceChat()">Voice Chat</button>
+            <div id="voiceChatResult" class="result"></div>
+            <div id="voiceChatAudio" class="audio-player"></div>
+        </div>
+
+        <div class="section">
+            <h3>5. Record Audio</h3>
+            <button id="recordButton" onclick="toggleRecording()">Start Recording</button>
+            <div id="recordResult" class="result"></div>
+            <div id="recordAudio" class="audio-player"></div>
+        </div>
+
+        <div class="section">
+            <h3>6. Chat History</h3>
+            <button onclick="getChatHistory()">Get History</button>
+            <button onclick="clearChatHistory()">Clear History</button>
+            <div id="historyResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                document.getElementById('healthResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('healthResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function transcribeAudio() {
+            const fileInput = document.getElementById('audioFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select an audio file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('audio', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/transcribe`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                document.getElementById('transcribeResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('transcribeResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function sendChat() {
+            const message = document.getElementById('chatMessage').value;
+            if (!message.trim()) {
+                alert('Please enter a message');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await response.json();
+                document.getElementById('chatResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('chatResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function convertToSpeech() {
+            const text = document.getElementById('ttsText').value;
+            if (!text.trim()) {
+                alert('Please enter text to convert');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/tts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: text })
+                });
+                const data = await response.json();
+                document.getElementById('ttsResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.audio) {
+                    const audioBlob = base64ToBlob(data.audio, `audio/${data.format}`);
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    document.getElementById('ttsAudio').innerHTML = `
+                        <audio controls>
+                            <source src="${audioUrl}" type="audio/${data.format}">
+                            Your browser does not support the audio element.
+                        </audio>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('ttsResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function voiceChat() {
+            const fileInput = document.getElementById('voiceChatFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select an audio file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('audio', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/voice-chat`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                document.getElementById('voiceChatResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.audio) {
+                    const audioBlob = base64ToBlob(data.audio, `audio/${data.audio_format}`);
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    document.getElementById('voiceChatAudio').innerHTML = `
+                        <audio controls>
+                            <source src="${audioUrl}" type="audio/${data.audio_format}">
+                            Your browser does not support the audio element.
+                        </audio>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('voiceChatResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'recorded.wav');
+
+                    try {
+                        const response = await fetch(`${API_BASE}/transcribe`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await response.json();
+                        document.getElementById('recordResult').textContent = JSON.stringify(data, null, 2);
+                    } catch (error) {
+                        document.getElementById('recordResult').textContent = 'Error: ' + error.message;
+                    }
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                document.getElementById('recordButton').textContent = 'Stop Recording';
+                document.getElementById('recordButton').classList.add('recording');
+            } catch (error) {
+                alert('Error accessing microphone: ' + error.message);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+                document.getElementById('recordButton').textContent = 'Start Recording';
+                document.getElementById('recordButton').classList.remove('recording');
+            }
+        }
+
+        async function getChatHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/chat-history`);
+                const data = await response.json();
+                document.getElementById('historyResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('historyResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function clearChatHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/chat-history`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                document.getElementById('historyResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('historyResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function base64ToBlob(base64, mimeType) {
+            const byteCharacters = atob(base64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            return new Blob([byteArray], { type: mimeType });
+        }
+
+        // Check health on page load
+        window.onload = function() {
+            checkHealth();
+        };
+    </script>
+</body>
+</html> 

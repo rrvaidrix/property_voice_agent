@@ -8,6 +8,8 @@ import pydub
 from io import BytesIO
 from pydub import AudioSegment
 from functools import lru_cache
+import os
+import wave
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -52,16 +54,41 @@ def record_audio(file_path, timeout=10, phrase_time_limit=None, retries=3, energ
                 audio_data = recognizer.listen(source, timeout=timeout, phrase_time_limit=phrase_time_limit)
                 logging.info("Recording complete")
 
-                # Convert the recorded audio data to an MP3 file
+                # Convert the recorded audio data to a file
                 wav_data = audio_data.get_wav_data()
-                audio_segment = pydub.AudioSegment.from_wav(BytesIO(wav_data))
-                mp3_data = audio_segment.export(file_path, format="mp3", bitrate="128k", parameters=["-ar", "22050", "-ac", "1"])
+                
+                # Ensure the directory exists
+                os.makedirs(os.path.dirname(file_path) if os.path.dirname(file_path) else '.', exist_ok=True)
+                
+                # Determine file format based on extension
+                if file_path.lower().endswith('.mp3'):
+                    # Try to save as MP3, fallback to WAV if FFmpeg not available
+                    try:
+                        audio_segment = pydub.AudioSegment.from_wav(BytesIO(wav_data))
+                        audio_segment.export(file_path, format="mp3", bitrate="128k")
+                        logging.info(f"Audio saved as MP3: {file_path}")
+                    except Exception as mp3_error:
+                        logging.warning(f"Failed to save as MP3: {mp3_error}")
+                        # Fallback to WAV
+                        wav_path = file_path.replace('.mp3', '.wav')
+                        with open(wav_path, 'wb') as f:
+                            f.write(wav_data)
+                        logging.info(f"Audio saved as WAV: {wav_path}")
+                        # Update the file path for the rest of the process
+                        file_path = wav_path
+                else:
+                    # Save as WAV directly
+                    with open(file_path, 'wb') as f:
+                        f.write(wav_data)
+                    logging.info(f"Audio saved as WAV: {file_path}")
+                
                 return
+                    
         except sr.WaitTimeoutError:
             logging.warning(f"Listening timed out, retrying... ({attempt + 1}/{retries})")
         except Exception as e:
             logging.error(f"Failed to record audio: {e}")
-            if attempt == retries -1:
+            if attempt == retries - 1:
                 raise
         
     logging.error("Recording failed after all retries")

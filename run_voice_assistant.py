@@ -31,15 +31,17 @@ def main():
     ]
 
     while True:
+        output_file = None
+        input_audio_file = Config.INPUT_AUDIO
         try:
             # Record audio from the microphone and save it as 'test.wav'
-            record_audio(Config.INPUT_AUDIO)
+            record_audio(input_audio_file)
 
             # Get the API key for transcription
             transcription_api_key = get_transcription_api_key()
             
             # Transcribe the audio file
-            user_input = transcribe_audio(Config.TRANSCRIPTION_MODEL, transcription_api_key, Config.INPUT_AUDIO, Config.LOCAL_MODEL_PATH)
+            user_input = transcribe_audio(Config.TRANSCRIPTION_MODEL, transcription_api_key, input_audio_file, Config.LOCAL_MODEL_PATH)
 
             # Check if the transcription is empty and restart the recording if it is. This check will avoid empty requests if vad_filter is used in the fastwhisperapi.
             if not user_input:
@@ -82,14 +84,17 @@ def main():
             else:
                 play_audio(output_file)
             
-            # Clean up audio files
-            # delete_file(Config.INPUT_AUDIO)
-            # delete_file(output_file)
+            # Clean up audio files with delay to avoid permission errors
+            time.sleep(0.5)  # Wait for audio playback to finish
+            delete_file(input_audio_file)
+            delete_file(output_file)
 
         except Exception as e:
             logging.error(Fore.RED + f"An error occurred: {e}" + Fore.RESET)
-            delete_file(Config.INPUT_AUDIO)
-            if 'output_file' in locals():
+            # Clean up files in case of error
+            time.sleep(0.5)
+            delete_file(input_audio_file)
+            if output_file:
                 delete_file(output_file)
             time.sleep(1)
 

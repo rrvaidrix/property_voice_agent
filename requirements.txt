@@ -27,8 +27,8 @@ colorama
 requests
 keyboard
 elevenlabs
-fastapi
-uvicorn
+flask
+flask-cors
 numpy 
 sounddevice 
 cartesia

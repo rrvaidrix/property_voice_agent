@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verbi - Voice Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2rem;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .voice-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+            position: relative;
+            margin: 1rem auto;
+        }
+
+        .voice-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .voice-button:active {
+            transform: scale(0.95);
+        }
+
+        .voice-button.recording {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            animation: pulse 1.5s infinite;
+        }
+
+        .voice-button.playing-audio {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            animation: pulse 1.5s infinite;
+        }
+
+        .auto-indicator {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .auto-indicator.show {
+            display: flex;
+        }
+
+        .auto-indicator.listening {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            animation: pulse 1.5s infinite;
+        }
+
+        .auto-indicator.voice-detected {
+            background: linear-gradient(135deg, #ff0000, #cc0000) !important;
+            animation: pulse 0.8s infinite;
+            border: 2px solid #ff0000;
+        }
+
+        .auto-dot {
+            width: 12px;
+            height: 12px;
+            background: #fff;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+
+        .control-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .toggle-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #f44336, #da190b);
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .status {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .status.active {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            display: block;
+        }
+
+        .status.inactive {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            display: block;
+        }
+
+        .chat-container {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            text-align: left;
+        }
+
+        .message {
+            margin: 0.5rem 0;
+            padding: 0.75rem;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-left: auto;
+        }
+
+        .assistant-message {
+            background: rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .wave-animation {
+            display: none;
+            justify-content: center;
+            gap: 3px;
+            margin: 1rem 0;
+        }
+
+        .wave-animation.show {
+            display: flex;
+        }
+
+        .wave {
+            width: 3px;
+            height: 20px;
+            background: #667eea;
+            border-radius: 2px;
+            animation: wave 1s ease-in-out infinite;
+        }
+
+        .wave:nth-child(2) { animation-delay: 0.1s; }
+        .wave:nth-child(3) { animation-delay: 0.2s; }
+        .wave:nth-child(4) { animation-delay: 0.3s; }
+        .wave:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { height: 20px; }
+            50% { height: 40px; }
+        }
+
+        .lang-select {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .lang-select label {
+            font-weight: 600;
+            color: #333;
+        }
+        .lang-select select {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+            
+            .title {
+                font-size: 1.5rem;
+            }
+            
+            .voice-button {
+                width: 100px;
+                height: 100px;
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">V</div>
+            <h1 class="title">Verbi</h1>
+            <p class="subtitle">Your AI Voice Assistant</p>
+        </div>
+
+        <div class="lang-select">
+            <label for="language">Language:</label>
+            <select id="language">
+                <option value="English">English</option>
+                <option value="German">German</option>
+                <option value="Arabic">Arabic</option>
+                <option value="French">French</option>
+                <option value="Spanish">Spanish</option>
+                <option value="Italian">Italian</option>
+                <option value="Portuguese">Portuguese</option>
+                <option value="Russian">Russian</option>
+                <option value="Chinese">Chinese</option>
+                <option value="Japanese">Japanese</option>
+                <option value="Korean">Korean</option>
+            </select>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn toggle-btn" id="toggleBtn" onclick="toggleConversation()">Start Conversation</button>
+            <button class="control-btn" id="manualRecordBtn" onclick="manualRecord()" style="background: linear-gradient(135deg, #ff9800, #f57c00); color: white; display: none;">Manual Record</button>
+        </div>
+
+        <div class="status" id="status">Ready to start</div>
+
+        <div class="auto-indicator" id="autoIndicator">
+            <div class="auto-dot"></div>
+            <span id="indicatorText">Listening Continuously</span>
+        </div>
+
+        <div class="wave-animation" id="waveAnimation">
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+            <div class="wave"></div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Processing your request...
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="message assistant-message">
+                Welcome to Verbi! Click "Start Conversation" to begin talking with your AI voice assistant.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let conversationActive = false;
+        let currentAudio = null;
+        let isPlayingAudio = false;
+        let autoListening = false;
+        let listeningTimeout = null;
+        let silenceTimer = null;
+        let maxListeningTime = 45; // Reduced for faster response
+        let silenceThreshold = 1.2; // Faster pause detection
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let dataArray = null;
+        let isProcessing = false;
+        
+        // TTS interruption variables
+        let ttsInterruptionTimer = null;
+        let ttsInterruptionCount = 0;
+        let ttsMonitoringActive = false;
+
+        // NATURAL CONVERSATION variables
+        let minimumSpeechDuration = 0.2; // Even shorter for faster response
+        let speechStartTime = null;
+        let totalSpeechTime = 0;
+        let consecutiveVoiceFrames = 0;
+        let consecutiveSilenceFrames = 0;
+        let isSpeaking = false;
+        let voiceBuffer = [];
+        let audioQualityCheck = {
+            minChunks: 1, // Very low minimum
+            minTotalSize: 2000, // Very low minimum
+            maxSilenceGaps: 10 // Allow many silence gaps for natural speech
+        };
+        let silenceGapCount = 0;
+        let lastVoiceTime = null;
+        let debugMode = false; // Disable debug for cleaner logs
+        
+        // Natural conversation timing
+        let naturalPauseThreshold = 1.2; // Faster pause detection
+        let continuousSpeechTimeout = 12; // Shorter continuous speech timeout
+        let isInNaturalConversation = false;
+        
+        async function toggleConversation() {
+            const toggleBtn = document.getElementById('toggleBtn');
+            
+            if (!conversationActive) {
+                // Start conversation
+                await startConversation();
+                if (conversationActive) {
+                    toggleBtn.textContent = 'Stop Conversation';
+                    toggleBtn.classList.add('active');
+                }
+            } else {
+                // Stop conversation
+                await stopConversation();
+                toggleBtn.textContent = 'Start Conversation';
+                toggleBtn.classList.remove('active');
+            }
+        }
+
+        async function startConversation() {
+            try {
+                // Check browser support first
+                if (!checkBrowserSupport()) {
+                    return;
+                }
+                
+                // Initialize audio context with user gesture
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                // Resume audio context if suspended
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+                
+                const response = await fetch('/api/start_conversation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        language: document.getElementById('language').value
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    conversationActive = true;
+                    updateStatus('Starting conversation...', 'active');
+                    
+                    // Show manual record button
+                    showManualRecordButton();
+                    
+                    // Add greeting message to chat
+                    addMessage('Assistant', data.greeting_text);
+                    
+                    // Play greeting audio
+                    console.log('🎵 Greeting audio status:', {
+                        hasAudio: !!data.greeting_audio,
+                        audioLength: data.greeting_audio ? data.greeting_audio.length : 0
+                    });
+                    
+                    if (data.greeting_audio) {
+                        await playAudio(data.greeting_audio, 'Greeting');
+                    } else {
+                        console.log('⚠️ No greeting audio received from server');
+                    }
+                } else {
+                    console.error('Failed to start conversation:', data.message);
+                    updateStatus('Error starting conversation', 'inactive');
+                }
+            } catch (error) {
+                console.error('Error starting conversation:', error);
+                updateStatus('Error starting conversation', 'inactive');
+            }
+        }
+
+        async function stopConversation() {
+            try {
+                // Stop auto listening
+                await stopAutoListening();
+                
+                // Stop any currently playing audio
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                    currentAudio = null;
+                }
+                
+                const response = await fetch('/api/stop_conversation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    conversationActive = false;
+                    isPlayingAudio = false;
+                    updateStatus('Conversation stopped', 'inactive');
+                    addMessage('Assistant', 'Conversation ended. Click "Start Conversation" to begin again.');
+                } else {
+                    console.error('Failed to stop conversation:', data.message);
+                }
+            } catch (error) {
+                console.error('Error stopping conversation:', error);
+            }
+        }
+
+        async function stopCurrentAudio() {
+            try {
+                await fetch('/api/stop_current_audio', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                // Stop local audio
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                    currentAudio = null;
+                }
+                isPlayingAudio = false;
+                
+                // Clean up interruption monitoring
+                if (microphone) {
+                    microphone.disconnect();
+                    microphone = null;
+                }
+                
+                console.log('Audio stopped, ready for next input');
+            } catch (error) {
+                console.error('Error stopping audio:', error);
+            }
+        }
+
+        async function playAudio(audioBase64, description = 'Audio') {
+            try {
+                console.log(`🔊 Playing ${description}: ${audioBase64 ? 'Audio data received' : 'No audio data'}`);
+                
+                if (!audioBase64) {
+                    console.log('⚠️ No audio data provided, skipping playback');
+                    return;
+                }
+                
+                // Stop any previous audio
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                }
+                
+                // Clean up any existing TTS monitoring
+                cleanupTTSMonitoring();
+                
+                currentAudio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
+                isPlayingAudio = true;
+                
+                // Add event listeners to track audio state
+                currentAudio.onloadedmetadata = () => {
+                    const duration = currentAudio.duration;
+                    console.log(`TTS loaded: ${duration.toFixed(2)}s duration - WILL PLAY COMPLETE MESSAGE`);
+                };
+                
+                currentAudio.onended = () => {
+                    const playTime = (Date.now() - audioStartTime) / 1000;
+                    const expectedDuration = currentAudio.duration || 0;
+                    
+                    console.log(`✅ TTS COMPLETED NATURALLY: played ${playTime.toFixed(2)}s of ${expectedDuration.toFixed(2)}s`);
+                    
+                    // Audio finished naturally - no interruption
+                    isPlayingAudio = false;
+                    cleanupTTSMonitoring();
+                    updateStatus('Listening for your input...', 'active');
+                    
+                    // Start auto listening only after COMPLETE TTS
+                    if (conversationActive) {
+                        setTimeout(() => {
+                            console.log('✅ Starting listening after COMPLETE TTS...');
+                            startAutoListening();
+                        }, 500);
+                    }
+                };
+                
+                currentAudio.onerror = (error) => {
+                    console.error('TTS playback error:', error);
+                    isPlayingAudio = false;
+                    cleanupTTSMonitoring();
+                    updateStatus('Error playing audio', 'inactive');
+                };
+                
+                currentAudio.onpause = () => {
+                    console.log('🛑 TTS was MANUALLY paused/interrupted by user');
+                };
+                
+                currentAudio.onabort = () => {
+                    console.log('🛑 TTS was MANUALLY aborted by user');
+                    isPlayingAudio = false;
+                    cleanupTTSMonitoring();
+                };
+                
+                let audioStartTime = Date.now();
+                await currentAudio.play();
+                updateStatus(`🔊 Playing response... (Speak to interrupt, or click)`, 'active');
+                
+                // RESTORED: Voice interruption monitoring - but with better filtering
+                console.log('🎤 TTS playing - voice interruption enabled');
+                console.log('🔊 TTS Status: Speak now to interrupt the response');
+                startTTSInterruptionMonitoring();
+                
+            } catch (error) {
+                console.error('Error playing audio:', error);
+                isPlayingAudio = false;
+                cleanupTTSMonitoring();
+                updateStatus('Error playing audio', 'inactive');
+            }
+        }
+
+        async function startAutoListening() {
+            // SAFETY CHECK: Never start listening while TTS is playing
+            if (!conversationActive || isProcessing || isPlayingAudio) {
+                console.log('❌ Cannot start auto listening:', {
+                    conversationActive,
+                    autoListening, 
+                    isProcessing,
+                    isPlayingAudio: isPlayingAudio ? 'TTS_PLAYING' : false
+                });
+                return;
+            }
+            
+            console.log('✅ Starting auto listening (TTS not playing)...');
+            
+            try {
+                // Start auto listening on server
+                await fetch('/api/start_auto_listening', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                autoListening = true;
+                document.getElementById('autoIndicator').classList.add('show');
+                updateStatus('Listening for your input... (will stop automatically when you pause)', 'active');
+                
+                // Start continuous recording with voice activity detection
+                await startContinuousRecording();
+                
+            } catch (error) {
+                console.error('Error starting auto listening:', error);
+                autoListening = false;
+            }
+        }
+
+        async function stopAutoListening() {
+            if (!autoListening) return;
+            
+            console.log('Stopping auto listening...');
+            
+            try {
+                await fetch('/api/stop_auto_listening', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                autoListening = false;
+                document.getElementById('autoIndicator').classList.remove('show');
+                document.getElementById('autoIndicator').classList.remove('voice-detected');
+                document.getElementById('indicatorText').textContent = 'Listening Continuously';
+                
+                if (listeningTimeout) {
+                    clearTimeout(listeningTimeout);
+                    listeningTimeout = null;
+                }
+                
+                if (silenceTimer) {
+                    clearTimeout(silenceTimer);
+                    silenceTimer = null;
+                }
+                
+                // Stop continuous recording
+                stopContinuousRecording();
+                
+            } catch (error) {
+                console.error('Error stopping auto listening:', error);
+            }
+        }
+
+        async function startContinuousRecording() {
+            try {
+                console.log('🎤 Requesting microphone access...');
+                
+                // Check if getUserMedia is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('Microphone access not supported in this browser');
+                }
+                
+                // Request microphone with improved constraints for better voice recognition
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                        sampleRate: 48000,  // Higher sample rate for better quality
+                        channelCount: 1,
+                        latency: 0.01,  // Lower latency
+                        volume: 1.0     // Full volume
+                    } 
+                });
+                
+                console.log('✅ Microphone access granted');
+                console.log('🎵 Audio tracks:', stream.getAudioTracks().length);
+                console.log('🎵 Track settings:', stream.getAudioTracks()[0]?.getSettings());
+                
+                // Create audio context with user gesture
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                // Resume audio context if suspended
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+                
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+                
+                console.log('Audio context setup complete');
+                
+                // Start recording with MediaRecorder with improved settings
+                const options = {
+                    mimeType: 'audio/webm;codecs=opus',  // Better codec for voice
+                    audioBitsPerSecond: 128000  // Higher bitrate for better quality
+                };
+                
+                // Fallback to default if the preferred format is not supported
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    options.mimeType = 'audio/webm';
+                }
+                
+                // Additional fallback for browsers that don't support webm
+                if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                    delete options.mimeType;
+                }
+                
+                mediaRecorder = new MediaRecorder(stream, options);
+                audioChunks = [];
+                
+                console.log('🎤 MediaRecorder created with options:', options);
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    console.log('📦 Audio chunk received:', event.data.size, 'bytes');
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = async () => {
+                    console.log('🛑 MediaRecorder stopped, processing input');
+                    console.log('📦 Total chunks:', audioChunks.length);
+                    console.log('📦 Total size:', audioChunks.reduce((sum, chunk) => sum + chunk.size, 0), 'bytes');
+                    
+                    if (audioChunks.length > 0) {
+                        await processUserInput();
+                    } else {
+                        console.log('⚠️ No audio chunks recorded - restarting listening');
+                        setTimeout(() => {
+                            if (conversationActive) {
+                                startAutoListening();
+                            }
+                        }, 300);
+                    }
+                };
+                
+                mediaRecorder.start(100); // Request data every 100ms
+                isRecording = true;
+                
+                // Ensure we get at least one chunk after a delay
+                setTimeout(() => {
+                    if (isRecording && audioChunks.length === 0) {
+                        console.log('⚠️ No audio chunks received, requesting data...');
+                        mediaRecorder.requestData();
+                    }
+                }, 500);
+                
+                document.getElementById('waveAnimation').classList.add('show');
+                updateStatus('🎤 Listening... Speak naturally (I\'ll respond when you pause)', 'active');
+                
+                // Start voice activity detection
+                detectVoiceActivity();
+                
+                // Set timeout for maximum listening time
+                listeningTimeout = setTimeout(() => {
+                    console.log('Maximum listening time reached');
+                    if (autoListening) {
+                        stopContinuousRecording();
+                    }
+                }, maxListeningTime * 1000);
+                
+                // OPTIMIZED: Faster timeouts for reduced latency
+                const continuousSpeechTimer = setTimeout(() => {
+                    if (autoListening && isRecording && totalSpeechTime > 4) {
+                        console.log('🛑 Continuous speech timeout - stopping to process');
+                        stopContinuousRecording();
+                    }
+                }, continuousSpeechTimeout * 1000);
+                
+                const noSpeechTimeout = setTimeout(() => {
+                    if (autoListening && isRecording && totalSpeechTime < 0.1) {
+                        console.log('No speech detected for 10 seconds, restarting...');
+                        stopContinuousRecording();
+                        setTimeout(() => {
+                            if (conversationActive) {
+                                startAutoListening();
+                            }
+                        }, 300);
+                    }
+                }, 10000); // 10 seconds
+                
+            } catch (error) {
+                console.error('❌ Error accessing microphone:', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                
+                // More specific error messages
+                if (error.name === 'NotAllowedError') {
+                    alert('❌ Microphone access denied. Please allow microphone permissions and refresh the page.');
+                } else if (error.name === 'NotFoundError') {
+                    alert('❌ No microphone found. Please connect a microphone and try again.');
+                } else if (error.name === 'NotSupportedError') {
+                    alert('❌ Microphone not supported in this browser. Please use a modern browser.');
+                } else {
+                    alert('❌ Error accessing microphone: ' + error.message + '. Please check permissions and refresh the page.');
+                }
+                
+                // Reset state
+                autoListening = false;
+                document.getElementById('autoIndicator').classList.remove('show');
+                document.getElementById('autoIndicator').classList.remove('voice-detected');
+                document.getElementById('indicatorText').textContent = 'Listening Continuously';
+            }
+        }
+
+        // Voice activity detection variables (already declared above)
+        
+        function detectVoiceActivity() {
+            if (!analyser || !autoListening || !dataArray) {
+                console.log('Audio context not ready, skipping detection');
+                return;
+            }
+            
+            try {
+                analyser.getByteFrequencyData(dataArray);
+            
+            // Calculate frequency distribution for human speech detection only
+            let lowFreqSum = 0;   // 0-500 Hz (breathing, background, claps)
+            let speechFreqSum = 0; // 500-2000 Hz (human speech fundamentals)
+            let highFreqSum = 0;  // 2000-4000 Hz (speech harmonics)
+            let ultraHighFreqSum = 0; // 4000+ Hz (whistles, high-pitched noises)
+            
+            for (let i = 0; i < dataArray.length; i++) {
+                const frequency = i * (audioContext.sampleRate / analyser.fftSize);
+                if (frequency < 500) {
+                    lowFreqSum += dataArray[i];
+                } else if (frequency < 2000) {
+                    speechFreqSum += dataArray[i];
+                } else if (frequency < 4000) {
+                    highFreqSum += dataArray[i];
+                } else {
+                    ultraHighFreqSum += dataArray[i];
+                }
+            }
+            
+            // Calculate human speech ratio (speech frequencies vs noise frequencies)
+            const speechRatio = (speechFreqSum + highFreqSum) / (lowFreqSum + ultraHighFreqSum + 1);
+            const totalVolume = (lowFreqSum + speechFreqSum + highFreqSum + ultraHighFreqSum) / dataArray.length;
+            
+            // Check for high-pitched noises (whistles, etc.) - Made less strict
+            const hasHighPitchedNoise = ultraHighFreqSum > (speechFreqSum * 1.2);
+            
+            // Check for non-speech sounds (claps, slaps, etc.) - Made less strict
+            const hasNonSpeechSound = lowFreqSum > (speechFreqSum * 3) || ultraHighFreqSum > (speechFreqSum * 0.8);
+            
+            // Store in buffer for trend analysis
+            voiceBuffer.push({
+                speechRatio: speechRatio,
+                totalVolume: totalVolume,
+                timestamp: Date.now()
+            });
+            
+            // Keep only last 10 frames (200ms at 50fps) for more responsive detection
+            if (voiceBuffer.length > 10) {
+                voiceBuffer.shift();
+            }
+            
+            // Calculate trend and variance
+            const recentFrames = voiceBuffer.slice(-5); // Require 5 consistent frames
+            const avgSpeechRatio = recentFrames.reduce((sum, frame) => sum + frame.speechRatio, 0) / recentFrames.length;
+            const avgVolume = recentFrames.reduce((sum, frame) => sum + frame.totalVolume, 0) / recentFrames.length;
+            const volumeVariance = recentFrames.reduce((sum, frame) => sum + Math.pow(frame.totalVolume - avgVolume, 2), 0) / recentFrames.length;
+
+            // Check for sudden loud noises (claps, slaps, etc.)
+            const hasSuddenNoise = totalVolume > 90 || avgVolume > 80;
+
+            // Ensure we have enough data before proceeding
+            if (recentFrames.length < 5) {
+                requestAnimationFrame(detectVoiceActivity);
+                return;
+            }
+            
+            // NATURAL CONVERSATION speech detection - very lenient
+            // Designed to feel like talking to a real person
+            const isSpeech = avgSpeechRatio > 0.8 &&
+                           avgVolume > 15 &&
+                           avgVolume < 85 &&
+                           volumeVariance < 100 &&
+                           !hasHighPitchedNoise &&
+                           !hasSuddenNoise &&
+                           !hasNonSpeechSound;
+            
+            if (debugMode) {
+                console.log('Speech analysis:', {
+                    speechRatio: avgSpeechRatio.toFixed(2),
+                    volume: avgVolume.toFixed(2),
+                    variance: volumeVariance.toFixed(2),
+                    hasHighPitchedNoise: hasHighPitchedNoise,
+                    hasSuddenNoise: hasSuddenNoise,
+                    hasNonSpeechSound: hasNonSpeechSound,
+                    isSpeech: isSpeech,
+                    consecutiveVoiceFrames: consecutiveVoiceFrames,
+                    totalSpeechTime: totalSpeechTime.toFixed(2),
+                    lowFreq: lowFreqSum,
+                    speechFreq: speechFreqSum,
+                    highFreq: highFreqSum,
+                    ultraHighFreq: ultraHighFreqSum
+                });
+            }
+            
+            // NATURAL CONVERSATION: Very simple detection for natural feel
+            const simpleVolumeDetection = avgVolume > 20 && avgVolume < 80;
+            
+            if (isSpeech || simpleVolumeDetection) {
+                if (!isSpeaking) {
+                    isSpeaking = true;
+                    speechStartTime = Date.now();
+                    silenceGapCount = 0; // Reset silence gap count
+                }
+                
+                consecutiveVoiceFrames++;
+                consecutiveSilenceFrames = 0;
+                lastVoiceTime = Date.now();
+                
+                // Update total speech time
+                if (speechStartTime) {
+                    totalSpeechTime = (Date.now() - speechStartTime) / 1000;
+                }
+                
+                // Update visual indicator - RED when voice detected
+                const indicator = document.getElementById('autoIndicator');
+                const indicatorText = document.getElementById('indicatorText');
+                if (indicator) {
+                    indicator.classList.add('listening');
+                    indicator.classList.add('voice-detected');
+                    if (indicatorText) {
+                        indicatorText.textContent = `🎤 Voice Detected! (${totalSpeechTime.toFixed(1)}s)`;
+                    }
+                }
+                
+                // Reset silence timer
+                if (silenceTimer) {
+                    clearTimeout(silenceTimer);
+                    silenceTimer = null;
+                }
+                
+            } else {
+                consecutiveSilenceFrames++;
+                consecutiveVoiceFrames = 0;
+                
+                // Track silence gaps
+                if (lastVoiceTime && (Date.now() - lastVoiceTime) > 1000) {
+                    silenceGapCount++;
+                }
+                
+                // NATURAL CONVERSATION: Start silence timer for natural pause detection
+                if (!silenceTimer && isRecording && autoListening && totalSpeechTime >= minimumSpeechDuration) {
+                    silenceTimer = setTimeout(() => {
+                        if (autoListening && isRecording) {
+                            console.log(`✅ Natural pause detected - stopping recording (speech: ${totalSpeechTime.toFixed(2)}s)`);
+                            stopContinuousRecording();
+                        }
+                    }, naturalPauseThreshold * 1000);
+                }
+            }
+            
+            // Continue detection
+            requestAnimationFrame(detectVoiceActivity);
+            } catch (error) {
+                console.error('Error in voice detection:', error);
+                // Continue detection even if there's an error
+                requestAnimationFrame(detectVoiceActivity);
+            }
+        }
+
+        function stopContinuousRecording() {
+            console.log('Stopping continuous recording');
+            
+            // Check audio quality before processing
+            const totalAudioSize = audioChunks.reduce((sum, chunk) => sum + chunk.size, 0);
+            const hasMinimumChunks = audioChunks.length >= audioQualityCheck.minChunks;
+            const hasMinimumSize = totalAudioSize >= audioQualityCheck.minTotalSize;
+            const hasMinimumSpeech = totalSpeechTime >= minimumSpeechDuration;
+            const hasTooManySilenceGaps = silenceGapCount > audioQualityCheck.maxSilenceGaps;
+            
+            console.log('Audio quality check:', {
+                chunks: audioChunks.length,
+                totalSize: totalAudioSize,
+                speechTime: totalSpeechTime.toFixed(2),
+                silenceGaps: silenceGapCount,
+                hasMinimumChunks,
+                hasMinimumSize,
+                hasMinimumSpeech,
+                hasTooManySilenceGaps
+            });
+            
+            // NATURAL CONVERSATION: Very lenient processing - process almost anything
+            if (!hasMinimumSpeech && totalSpeechTime < 0.2) {
+                console.log('❌ No speech detected at all, restarting listening...');
+                resetRecordingState();
+                setTimeout(() => {
+                    if (conversationActive) {
+                        startAutoListening();
+                    }
+                }, 300);
+                return;
+            }
+            
+            // Only reject if there are way too many silence gaps (indicating very fragmented speech)
+            if (hasTooManySilenceGaps && silenceGapCount > 50) {
+                console.log('❌ Too fragmented speech detected, restarting listening...');
+                resetRecordingState();
+                setTimeout(() => {
+                    if (conversationActive) {
+                        startAutoListening();
+                    }
+                }, 300);
+                return;
+            }
+            
+            // Process if we have any reasonable audio data or speech was detected
+            if ((audioChunks.length > 0 && totalAudioSize > 1000) || totalSpeechTime > 0.5) {
+                console.log('✅ Processing audio for natural conversation');
+            }
+            
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+                
+                document.getElementById('waveAnimation').classList.remove('show');
+                document.getElementById('autoIndicator').classList.remove('show');
+                document.getElementById('autoIndicator').classList.remove('voice-detected');
+                document.getElementById('indicatorText').textContent = 'Listening Continuously';
+                updateStatus('🤔 Processing your input...', 'inactive');
+                
+                // Clear silence timer
+                if (silenceTimer) {
+                    clearTimeout(silenceTimer);
+                    silenceTimer = null;
+                }
+                
+                // Clear listening timeout
+                if (listeningTimeout) {
+                    clearTimeout(listeningTimeout);
+                    listeningTimeout = null;
+                }
+                
+                // Clean up audio context
+                if (audioContext) {
+                    audioContext.close();
+                    audioContext = null;
+                    analyser = null;
+                    microphone = null;
+                    dataArray = null;
+                }
+                
+                // Reset auto listening state
+                autoListening = false;
+            }
+        }
+        
+        function resetRecordingState() {
+            // Reset all voice detection variables
+            isSpeaking = false;
+            speechStartTime = null;
+            totalSpeechTime = 0;
+            consecutiveVoiceFrames = 0;
+            consecutiveSilenceFrames = 0;
+            silenceGapCount = 0;
+            lastVoiceTime = null;
+            voiceBuffer = [];
+            
+            // Clear timers
+            if (silenceTimer) {
+                clearTimeout(silenceTimer);
+                silenceTimer = null;
+            }
+            
+            if (listeningTimeout) {
+                clearTimeout(listeningTimeout);
+                listeningTimeout = null;
+            }
+            
+            // Reset UI
+            document.getElementById('waveAnimation').classList.remove('show');
+            document.getElementById('autoIndicator').classList.remove('show');
+            document.getElementById('autoIndicator').classList.remove('voice-detected');
+            document.getElementById('indicatorText').textContent = 'Listening Continuously';
+            
+            // Clean up audio context
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+                analyser = null;
+                microphone = null;
+                dataArray = null;
+            }
+            
+            // Reset auto listening state
+            autoListening = false;
+        }
+
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        function addMessage(sender, message) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender.toLowerCase()}-message`;
+            messageDiv.textContent = message;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function processUserInput() {
+            if (isProcessing) return;
+            
+            console.log('🎤 Processing user input...');
+            console.log('📦 Audio chunks:', audioChunks.length);
+            console.log('📦 Total audio size:', audioChunks.reduce((sum, chunk) => sum + chunk.size, 0), 'bytes');
+            console.log('🎤 Speech duration:', totalSpeechTime.toFixed(2), 'seconds');
+            
+            // FALLBACK: If no audio chunks but speech was detected, create a dummy audio
+            if (audioChunks.length === 0 && totalSpeechTime > 0.5) {
+                console.log('⚠️ No audio chunks but speech detected - creating fallback audio');
+                // Create a minimal audio blob to trigger processing
+                const dummyAudio = new Blob([''], { type: 'audio/wav' });
+                audioChunks = [dummyAudio];
+            }
+            
+            isProcessing = true;
+            const loading = document.getElementById('loading');
+            loading.classList.add('show');
+            
+            try {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const formData = new FormData();
+                formData.append('audio', audioBlob);
+
+                updateStatus('🤔 Processing your message...', 'inactive');
+
+                console.log('🌐 Sending audio to server...');
+                // Add language information to the request
+                const selectedLanguage = document.getElementById('language').value;
+                formData.append('language', selectedLanguage);
+                
+                const response = await fetch('/api/process_user_input', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('📡 Server response status:', response.status);
+                const data = await response.json();
+                console.log('📡 Server response data:', data);
+                
+                if (data.status === 'success') {
+                    // Check if transcription is meaningful
+                    const userInput = data.user_input.trim();
+                    if (userInput.length < 2 || userInput.toLowerCase() === 'unknown' || userInput.toLowerCase() === 'error') {
+                        console.log('❌ Poor transcription quality detected:', userInput);
+                        addMessage('Assistant', 'I didn\'t catch that. Could you repeat?');
+                        
+                        // Restart listening immediately
+                        setTimeout(() => {
+                            if (conversationActive) {
+                                console.log('Restarting listening after poor transcription...');
+                                startAutoListening();
+                            }
+                        }, 150);
+                        return;
+                    }
+                    
+                    addMessage('User', userInput);
+                    addMessage('Assistant', data.assistant_response);
+                    
+                    // Play the audio response
+                    if (data.audio_data) {
+                        await playAudio(data.audio_data, 'Response');
+                    }
+                    // Note: Listening will restart automatically when TTS finishes
+                } else {
+                    console.log('❌ Server processing failed:', data.message);
+                    addMessage('Assistant', 'Sorry, I didn\'t catch that. Could you repeat?');
+                    
+                    // Restart listening after a short delay
+                    setTimeout(() => {
+                        if (conversationActive) {
+                            console.log('Restarting listening after server error...');
+                            startAutoListening();
+                        }
+                    }, 200);
+                }
+            } catch (error) {
+                console.error('Error processing audio:', error);
+                addMessage('Assistant', 'Sorry, I encountered an error. Please try again.');
+                
+                // Restart listening after a short delay
+                setTimeout(() => {
+                    if (conversationActive) {
+                        startAutoListening();
+                    }
+                }, 200);
+            } finally {
+                loading.classList.remove('show');
+                isProcessing = false;
+                
+                // Reset voice detection state for next recording
+                resetRecordingState();
+            }
+        }
+
+        // Add event listener for MANUAL user interruption (ONLY click and keyboard)
+        document.addEventListener('click', async () => {
+            // If TTS is playing and user clicks anywhere, stop TTS and start listening
+            if (isPlayingAudio && conversationActive) {
+                console.log('🛑 User CLICKED - MANUAL interruption of TTS');
+                await stopCurrentAudio();
+                setTimeout(() => startAutoListening(), 300);
+            }
+        });
+        
+        // Add keyboard interruption (spacebar or any key)
+        document.addEventListener('keydown', async (event) => {
+            // If TTS is playing and user presses any key, stop TTS and start listening
+            if (isPlayingAudio && conversationActive) {
+                console.log(`🛑 User pressed ${event.key} - MANUAL interruption of TTS`);
+                await stopCurrentAudio();
+                setTimeout(() => startAutoListening(), 300);
+            }
+        });
+
+        // RESTORED: More sensitive TTS interruption monitoring (like the original)
+        function startTTSInterruptionMonitoring() {
+            if (!currentAudio || !conversationActive || ttsMonitoringActive) return;
+            
+            console.log('🎤 Starting sensitive voice interruption monitoring...');
+            ttsMonitoringActive = true;
+            
+            // Create a separate audio context for TTS monitoring to avoid conflicts
+            const ttsAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Resume audio context if suspended
+            if (ttsAudioContext.state === 'suspended') {
+                ttsAudioContext.resume();
+            }
+            
+            navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                    sampleRate: 48000,
+                    channelCount: 1
+                } 
+            }).then(stream => {
+                window.ttsMonitoringStream = stream;
+                
+                const ttsAnalyser = ttsAudioContext.createAnalyser();
+                const ttsMicrophone = ttsAudioContext.createMediaStreamSource(stream);
+                ttsMicrophone.connect(ttsAnalyser);
+                
+                // Store TTS-specific variables globally for cleanup
+                window.ttsMicrophone = ttsMicrophone;
+                window.ttsAnalyser = ttsAnalyser;
+                window.ttsAudioContext = ttsAudioContext;
+                
+                ttsAnalyser.fftSize = 256;
+                const bufferLength = ttsAnalyser.frequencyBinCount;
+                const ttsDataArray = new Uint8Array(bufferLength);
+                
+                let consecutiveVoiceDetections = 0;
+                
+                function monitorForVoiceInterruption() {
+                    if (!isPlayingAudio || !conversationActive || !ttsMonitoringActive) {
+                        console.log('🛑 Stopping voice interruption monitoring');
+                        cleanupTTSMonitoring();
+                        return;
+                    }
+                    
+                    try {
+                        ttsAnalyser.getByteFrequencyData(ttsDataArray);
+                    
+                    // SIMPLER, MORE RESPONSIVE detection (like original)
+                    let lowFreqSum = 0;
+                    let speechFreqSum = 0;
+                    let highFreqSum = 0;
+                    let ultraHighFreqSum = 0;
+                    
+                    for (let i = 0; i < ttsDataArray.length; i++) {
+                        const frequency = i * (ttsAudioContext.sampleRate / ttsAnalyser.fftSize);
+                        if (frequency < 500) {
+                            lowFreqSum += ttsDataArray[i];
+                        } else if (frequency < 2000) {
+                            speechFreqSum += ttsDataArray[i];
+                        } else if (frequency < 4000) {
+                            highFreqSum += ttsDataArray[i];
+                        } else {
+                            ultraHighFreqSum += ttsDataArray[i];
+                        }
+                    }
+                    
+                    // Calculate speech metrics (simplified for responsiveness)
+                    const speechRatio = (speechFreqSum + highFreqSum) / (lowFreqSum + ultraHighFreqSum + 1);
+                    const totalVolume = (lowFreqSum + speechFreqSum + highFreqSum + ultraHighFreqSum) / ttsDataArray.length;
+                    
+                    // NATURAL CONVERSATION interruption - very responsive
+                    const isActualSpeech = speechRatio > 0.8 &&     // Very low threshold for natural feel
+                                         totalVolume > 15 &&       // Low volume threshold
+                                         totalVolume < 85 &&       // High max volume
+                                         ultraHighFreqSum < (speechFreqSum * 1.5); // Very lenient noise filtering
+                    
+                    if (isActualSpeech) {
+                        consecutiveVoiceDetections++;
+                        console.log(`🗣️ Voice detected for interruption: ${consecutiveVoiceDetections}`);
+                        
+                        // NATURAL CONVERSATION interruption - very fast response
+                        if (consecutiveVoiceDetections >= 1) {
+                            console.log('🛑 NATURAL INTERRUPTION: Stopping TTS immediately');
+                            cleanupTTSMonitoring();
+                            stopCurrentAudio();
+                            setTimeout(() => startAutoListening(), 100); // Very fast restart
+                            return;
+                        }
+                    } else {
+                        // Reset but don't reset too aggressively
+                        if (consecutiveVoiceDetections > 0) {
+                            consecutiveVoiceDetections = Math.max(0, consecutiveVoiceDetections - 1);
+                        }
+                    }
+                    
+                    // Continue monitoring with faster frame rate for responsiveness
+                    requestAnimationFrame(monitorForVoiceInterruption);
+                    } catch (error) {
+                        console.error('Error in voice interruption monitoring:', error);
+                        cleanupTTSMonitoring();
+                    }
+                }
+                
+                monitorForVoiceInterruption();
+            }).catch(error => {
+                console.error('Error setting up voice interruption monitoring:', error);
+                ttsMonitoringActive = false;
+            });
+        }
+
+        // Cleanup function for TTS monitoring
+        function cleanupTTSMonitoring() {
+            console.log('🧹 Cleaning up TTS monitoring...');
+            
+            // Reset monitoring state
+            if (typeof ttsMonitoringActive !== 'undefined') {
+                ttsMonitoringActive = false;
+            }
+            
+            // Clean up microphone stream
+            if (window.ttsMonitoringStream) {
+                window.ttsMonitoringStream.getTracks().forEach(track => track.stop());
+                window.ttsMonitoringStream = null;
+            }
+            
+            // Clean up manual interrupt stream
+            if (window.manualInterruptStream) {
+                window.manualInterruptStream.getTracks().forEach(track => track.stop());
+                window.manualInterruptStream = null;
+            }
+            
+            // Clean up audio connections (don't affect main recording)
+            if (window.ttsMicrophone) {
+                try {
+                    window.ttsMicrophone.disconnect();
+                } catch (e) {
+                    console.log('TTS Microphone already disconnected');
+                }
+                window.ttsMicrophone = null;
+            }
+            
+            // Clear any timeouts
+            if (typeof ttsInterruptionTimer !== 'undefined' && ttsInterruptionTimer) {
+                clearTimeout(ttsInterruptionTimer);
+                ttsInterruptionTimer = null;
+            }
+            
+            console.log('✅ TTS monitoring cleanup completed');
+        }
+
+        // DISABLED: Fallback mechanism that was interfering with TTS
+        function ensureContinuousListening() {
+            // ONLY restart if truly stuck AND not playing audio
+            if (conversationActive && !autoListening && !isPlayingAudio && !isProcessing) {
+                console.log('🔄 Fallback: Detected stuck state (TTS not playing)');
+                setTimeout(() => {
+                    // Double-check TTS is not playing before restarting
+                    if (!isPlayingAudio && conversationActive && !autoListening && !isProcessing) {
+                        console.log('🔄 Fallback: Restarting listening after confirmation');
+                        startAutoListening();
+                    }
+                }, 2000);
+            }
+        }
+        
+        // MUCH LESS FREQUENT: Check every 10 seconds instead of 3 (avoid interference)
+        setInterval(ensureContinuousListening, 10000);
+
+        // Check browser compatibility
+        function checkBrowserSupport() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('Your browser does not support microphone access. Please use a modern browser like Chrome, Firefox, or Safari.');
+                return false;
+            }
+            
+            if (!window.AudioContext && !window.webkitAudioContext) {
+                alert('Your browser does not support Web Audio API. Please use a modern browser.');
+                return false;
+            }
+            
+            return true;
+        }
+
+
+
+        // Manual recording function
+        async function manualRecord() {
+            if (!conversationActive) return;
+            
+            console.log('🎤 Manual recording triggered');
+            const manualBtn = document.getElementById('manualRecordBtn');
+            manualBtn.style.display = 'none';
+            
+            // Start recording immediately
+            await startContinuousRecording();
+            
+            // Show manual recording indicator
+            updateStatus('🎤 Manual recording... Click to stop', 'active');
+            
+            // Add click listener to stop recording
+            const stopRecording = async () => {
+                if (isRecording) {
+                    stopContinuousRecording();
+                    document.removeEventListener('click', stopRecording);
+                    manualBtn.style.display = 'block';
+                }
+            };
+            
+            document.addEventListener('click', stopRecording);
+        }
+        
+        // Show manual record button when conversation is active
+        function showManualRecordButton() {
+            const manualBtn = document.getElementById('manualRecordBtn');
+            if (conversationActive) {
+                manualBtn.style.display = 'block';
+            }
+        }
+        
+        // Initialize
+        if (checkBrowserSupport()) {
+            updateStatus('Click "Start Conversation" to begin', 'inactive');
+        } else {
+            updateStatus('Browser not supported', 'inactive');
+        }
+    </script>
+</body>
+</html> 
