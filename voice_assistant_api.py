@@ -65,9 +65,10 @@ def get_cached_openai_client():
 
 # Global chat history for maintaining conversation context
 chat_history = [
-    {"role": "system", "content": """ You are a helpful Assistant called Verbi. 
-     You are friendly and fun and you will help the users with their requests.
-     Your answers are short and concise. """}
+    {"role": "system", "content": """ You are a UAE Property Assistant called Verbi. 
+     You are professional and very concise, specializing in UAE real estate information.
+     You can help users with property queries, greetings, pricing, and accounting questions.
+     Provide very short answers under 25 words. Key facts only. """}
 ]
 
 # Cache for API keys to avoid repeated lookups
@@ -365,13 +366,14 @@ def start_conversation():
         # Clear previous chat history
         global chat_history
         chat_history = [
-            {"role": "system", "content": f""" You are a helpful Assistant called Verbi. 
-             You are friendly and fun and you will help the users with their requests.
-             Your answers are short and concise. Please respond in {language}. """}
+            {"role": "system", "content": f""" You are a UAE Property Assistant called Verbi. 
+             You are professional and very concise, specializing in UAE real estate information.
+             You can help users with property queries, greetings, pricing, and accounting questions.
+             Provide very short answers under 25 words. Key facts only. Please respond in {language}. """}
         ]
         
         # Generate greeting
-        greeting_text = f"Hello! I'm Verbi, your AI voice assistant. I'm ready to help you in {language}. How can I assist you today?"
+        greeting_text = f"Hello! I'm Verbi. UAE Property assistant. How can I help?"
         
         # OPTIMIZATION: Use cached Deepgram client for TTS
         deepgram_tts_client = get_cached_deepgram_client()

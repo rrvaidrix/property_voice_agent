@@ -1,0 +1,50 @@
+[
+  {
+    "location": "Dubai Marina",
+    "price": "2.5M AED",
+    "features": "2BR, Sea View, Gym, Pool",
+    "status": "Available"
+  },
+  {
+    "location": "Palm Jumeirah",
+    "price": "5.2M AED",
+    "features": "3BR, Beach Access, Private Pool, Garden",
+    "status": "Available"
+  },
+  {
+    "location": "Downtown Dubai",
+    "price": "3.8M AED",
+    "features": "2BR, Burj Khalifa View, Luxury Amenities",
+    "status": "Available"
+  },
+  {
+    "location": "JBR",
+    "price": "1.9M AED",
+    "features": "1BR, Beachfront, Walk to Marina",
+    "status": "Available"
+  },
+  {
+    "location": "Emirates Hills",
+    "price": "8.5M AED",
+    "features": "4BR Villa, Golf Course View, Private Garden",
+    "status": "Available"
+  },
+  {
+    "location": "Arabian Ranches",
+    "price": "4.2M AED",
+    "features": "3BR Villa, Community Pool, Tennis Courts",
+    "status": "Available"
+  },
+  {
+    "location": "Dubai Hills Estate",
+    "price": "2.8M AED",
+    "features": "2BR, Golf Course View, Family Community",
+    "status": "Available"
+  },
+  {
+    "location": "Palm Jebel Ali",
+    "price": "6.1M AED",
+    "features": "3BR, Beach Access, Waterfront Location",
+    "status": "Available"
+  }
+]
